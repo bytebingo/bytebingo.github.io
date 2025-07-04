@@ -1,0 +1,507 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+    <id>https://bytebingo.github.io</id>
+    <title>bytebingo</title>
+    <updated>2025-07-04T02:45:43.859Z</updated>
+    <generator>https://github.com/jpmonette/feed</generator>
+    <link rel="alternate" href="https://bytebingo.github.io"/>
+    <link rel="self" href="https://bytebingo.github.io/atom.xml"/>
+    <subtitle>温故而知新</subtitle>
+    <logo>https://bytebingo.github.io/images/avatar.png</logo>
+    <icon>https://bytebingo.github.io/favicon.ico</icon>
+    <rights>All rights reserved 2025, bytebingo</rights>
+    <entry>
+        <title type="html"><![CDATA[AiBrix Pod Scheduler]]></title>
+        <id>https://bytebingo.github.io/post/aibrix-pod-scheduler/</id>
+        <link href="https://bytebingo.github.io/post/aibrix-pod-scheduler/">
+        </link>
+        <updated>2025-07-03T12:19:25.000Z</updated>
+        <content type="html"><![CDATA[<h2 id="项目地址">项目地址</h2>
+<p><a href="https://github.com/vllm-project/aibrix">https://github.com/vllm-project/aibrix</a></p>
+<h2 id="项目文档">项目文档</h2>
+<p><a href="https://aibrix.readthedocs.io/latest/getting_started/quickstart.html">https://aibrix.readthedocs.io/latest/getting_started/quickstart.html</a><br>
+<br><br>
+<img src="https://aibrix.readthedocs.io/latest/_images/gateway-design.png" alt="Gateway设计图" loading="lazy"></p>
+<h1 id="支持的指标列表">支持的指标列表</h1>
+<pre><code>const (
+	NumRequestsRunning                   = &quot;num_requests_running&quot;
+	NumRequestsWaiting                   = &quot;num_requests_waiting&quot;
+	NumRequestsSwapped                   = &quot;num_requests_swapped&quot;
+	AvgPromptThroughputToksPerS          = &quot;avg_prompt_throughput_toks_per_s&quot;
+	AvgGenerationThroughputToksPerS      = &quot;avg_generation_throughput_toks_per_s&quot;
+	IterationTokensTotal                 = &quot;iteration_tokens_total&quot;
+	TimeToFirstTokenSeconds              = &quot;time_to_first_token_seconds&quot;
+	TimePerOutputTokenSeconds            = &quot;time_per_output_token_seconds&quot;
+	E2ERequestLatencySeconds             = &quot;e2e_request_latency_seconds&quot;
+	RequestQueueTimeSeconds              = &quot;request_queue_time_seconds&quot;
+	RequestInferenceTimeSeconds          = &quot;request_inference_time_seconds&quot;
+	RequestDecodeTimeSeconds             = &quot;request_decode_time_seconds&quot;
+	RequestPrefillTimeSeconds            = &quot;request_prefill_time_seconds&quot;
+	P95TTFT5m                            = &quot;p95_ttft_5m&quot;
+	P95TTFT5mPod                         = &quot;p95_ttft_5m_pod&quot;
+	AvgTTFT5mPod                         = &quot;avg_ttft_5m_pod&quot;
+	P95TPOT5mPod                         = &quot;p95_tpot_5m_pod&quot;
+	AvgTPOT5mPod                         = &quot;avg_tpot_pod_5m&quot;
+	AvgPromptToksPerReq                  = &quot;avg_prompt_toks_per_req&quot;
+	AvgGenerationToksPerReq              = &quot;avg_generation_toks_per_req&quot;
+	GPUCacheUsagePerc                    = &quot;gpu_cache_usage_perc&quot;
+	CPUCacheUsagePerc                    = &quot;cpu_cache_usage_perc&quot;
+	AvgE2ELatencyPod                     = &quot;avg_e2e_latency_pod&quot;
+	AvgRequestsPerMinPod                 = &quot;avg_requests_per_min_pod&quot;
+	AvgPromptThroughputToksPerMinPod     = &quot;avg_prompt_throughput_toks_per_min_pod&quot;
+	AvgGenerationThroughputToksPerMinPod = &quot;avg_generation_throughput_toks_per_min_pod&quot;
+	MaxLora                              = &quot;max_lora&quot;
+	WaitingLoraAdapters                  = &quot;waiting_lora_adapters&quot;
+	RunningLoraAdapters                  = &quot;running_lora_adapters&quot;
+	VTCBucketSizeActive                  = &quot;vtc_bucket_size_active&quot;
+	RealtimeNumRequestsRunning           = &quot;realtime_num_requests_running&quot;
+)
+</code></pre>
+<h1 id="支持的路由策略">支持的路由策略</h1>
+<hr>
+<h2 id="1-random">1. random</h2>
+<ul>
+<li><strong>实现原理</strong>：随机选择一个可用的Pod来处理请求</li>
+<li><strong>使用场景</strong>：适合负载均衡、简单部署场景，或作为其他策略的回退机制</li>
+<li><strong>优点</strong>：实现简单，没有状态依赖</li>
+</ul>
+<h2 id="2-least-request">2. least-request</h2>
+<ul>
+<li><strong>实现原理</strong>：选择当前处理请求数最少的Pod，基于实时监控的请求数指标</li>
+<li><strong>使用场景</strong>：适合需要均衡分配负载的场景，避免某些Pod过载</li>
+<li><strong>优点</strong>：有效平衡负载，提高整体系统吞吐量</li>
+</ul>
+<h2 id="3-prefix-cache">3. prefix-cache</h2>
+<ul>
+<li><strong>实现原理</strong>：根据请求的文本前缀将请求路由到已经缓存过相似前缀的Pod，利用缓存提高性能</li>
+<li><strong>使用场景</strong>：聊天应用、连续对话，或需要利用之前的上下文提高性能的场景</li>
+<li><strong>优点</strong>：通过缓存匹配提高推理性能，减少冷启动问题</li>
+</ul>
+<h2 id="4-prefix-cache-preble">4. prefix-cache-preble</h2>
+<ul>
+<li><strong>实现原理</strong>：结合前缀缓存和负载信息进行路由决策，平衡缓存命中率和负载均衡</li>
+<li><strong>使用场景</strong>：高并发对话系统，需要同时考虑性能和资源利用率</li>
+<li><strong>特性</strong>：使用滑动窗口来评估性能，处理负载不平衡情况</li>
+</ul>
+<h2 id="5-throughput">5. throughput</h2>
+<ul>
+<li><strong>实现原理</strong>：基于Pod的吞吐量指标进行路由，将请求发送到吞吐能力最强的Pod</li>
+<li><strong>使用场景</strong>：对性能要求高的批量处理场景</li>
+<li><strong>优点</strong>：最大化系统的整体处理能力</li>
+</ul>
+<h2 id="6-least-latency">6. least-latency</h2>
+<ul>
+<li><strong>实现原理</strong>：选择具有最低预期延迟的Pod来处理请求</li>
+<li><strong>使用场景</strong>：对响应时间敏感的应用，如实时对话系统</li>
+<li><strong>优点</strong>：最小化用户等待时间</li>
+</ul>
+<h2 id="7-least-busy-time">7. least-busy-time</h2>
+<ul>
+<li><strong>实现原理</strong>：基于Pod的忙碌时间指标选择负载较轻的Pod</li>
+<li><strong>使用场景</strong>：长时间运行的请求，需要平衡资源利用率</li>
+</ul>
+<h2 id="8-least-kv-cache">8. least-kv-cache</h2>
+<ul>
+<li><strong>实现原理</strong>：将请求路由到KV缓存使用率最低的Pod</li>
+<li><strong>使用场景</strong>：需要优化KV缓存利用率的大型模型推理</li>
+<li><strong>优点</strong>：提高缓存利用效率，减少内存压力</li>
+</ul>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[vLLM KV Cache Events]]></title>
+        <id>https://bytebingo.github.io/post/vllm-kv-cache-events/</id>
+        <link href="https://bytebingo.github.io/post/vllm-kv-cache-events/">
+        </link>
+        <updated>2025-06-28T03:03:22.000Z</updated>
+        <content type="html"><![CDATA[<h1 id="vllm-kv-cache-events系统调研报告">vLLM KV Cache Events系统调研报告</h1>
+<h2 id="1-系统概述">1. 系统概述</h2>
+<p>vLLM实现了一个基于ZeroMQ的事件发布-订阅系统，用于监控和分析KV Cache的状态变化。该系统允许外部服务实时获取大语言模型推理过程中KV缓存块的分配、存储和释放等关键事件，为性能优化、调试和监控提供了重要支持。</p>
+<h2 id="2-架构设计">2. 架构设计</h2>
+<h3 id="21-核心组件">2.1 核心组件</h3>
+<ol>
+<li><strong>事件生成器</strong>: 在<code>BlockPool</code>中嵌入的事件触发点</li>
+<li><strong>事件发布器</strong>: 基于ZeroMQ的<code>ZmqEventPublisher</code>类</li>
+<li><strong>事件配置</strong>: 通过<code>KVEventsConfig</code>类控制事件系统行为</li>
+<li><strong>事件订阅器</strong>: 外部系统通过ZeroMQ订阅事件</li>
+</ol>
+<h3 id="22-数据流">2.2 数据流</h3>
+<pre><code>BlockPool -&gt; KVCacheEvent -&gt; ZmqEventPublisher -&gt; ZeroMQ -&gt; 外部订阅者
+</code></pre>
+<h2 id="3-事件类型与数据结构">3. 事件类型与数据结构</h2>
+<h3 id="31-基础事件类型">3.1 基础事件类型</h3>
+<pre><code class="language-python">class KVCacheEvent(msgspec.Struct):
+    &quot;&quot;&quot;所有KV缓存相关事件的基类&quot;&quot;&quot;
+    pass
+</code></pre>
+<h3 id="32-具体事件类型">3.2 具体事件类型</h3>
+<ol>
+<li><strong>BlockStored</strong>: 块存储事件</li>
+</ol>
+<pre><code class="language-python">class BlockStored(KVCacheEvent):
+    block_hashes: list[int]          # 块哈希列表
+    parent_block_hash: Optional[int] # 父块哈希(前缀链)
+    token_ids: list[int]             # 存储的token ID列表
+    block_size: int                  # 块大小
+    lora_id: Optional[int]           # LoRA ID(如使用)
+</code></pre>
+<ol start="2">
+<li><strong>BlockRemoved</strong>: 块移除事件</li>
+</ol>
+<pre><code class="language-python">class BlockRemoved(KVCacheEvent):
+    block_hashes: list[int]          # 被移除的块哈希列表
+</code></pre>
+<ol start="3">
+<li><strong>AllBlocksCleared</strong>: 所有块清除事件</li>
+</ol>
+<pre><code class="language-python">class AllBlocksCleared(KVCacheEvent):
+    pass
+</code></pre>
+<h3 id="33-事件批次包装">3.3 事件批次包装</h3>
+<pre><code class="language-python">class EventBatch(msgspec.Struct):
+    ts: float                      # 时间戳
+    events: list[KVCacheEvent]     # 事件列表
+    data_parallel_rank: Optional[int] = None  # 数据并行等级
+</code></pre>
+<h2 id="4-事件生成机制分析">4. 事件生成机制分析</h2>
+<h3 id="41-事件触发点">4.1 事件触发点</h3>
+<p>从源码分析，事件在以下三个关键点生成：</p>
+<ol>
+<li><strong>块存储</strong>:</li>
+</ol>
+<pre><code class="language-python"># vllm/v1/core/block_pool.py:190
+if self.enable_kv_cache_events:
+    self.kv_event_queue.append(
+        BlockStored(
+            block_hashes=new_hashes,
+            parent_block_hash=parent_block_hash,
+            token_ids=request.all_token_ids[...],
+            block_size=block_size,
+            lora_id=request.lora_request.id if request.lora_request else None,
+        ))
+</code></pre>
+<ol start="2">
+<li><strong>块驱逐</strong>:</li>
+</ol>
+<pre><code class="language-python"># vllm/v1/core/block_pool.py:257
+if self.enable_kv_cache_events:
+    self.kv_event_queue.append(
+        BlockRemoved(block_hashes=[block_hash.get_hash_value()]))
+</code></pre>
+<ol start="3">
+<li><strong>缓存重置</strong>:</li>
+</ol>
+<pre><code class="language-python"># vllm/v1/core/block_pool.py:318
+if self.enable_kv_cache_events:
+    self.kv_event_queue.append(AllBlocksCleared())
+</code></pre>
+<h3 id="42-事件队列管理">4.2 事件队列管理</h3>
+<p>事件生成后存储在<code>BlockPool.kv_event_queue</code>中，并通过<code>take_events</code>方法获取：</p>
+<pre><code class="language-python"># vllm/v1/core/block_pool.py:339
+def take_events(self) -&gt; list[KVCacheEvent]:
+    &quot;&quot;&quot;Atomically takes all events and clears the queue.&quot;&quot;&quot;
+    if not self.enable_kv_cache_events:
+        return []
+    events = self.kv_event_queue
+    self.kv_event_queue = []
+    return events
+</code></pre>
+<h2 id="5-事件发布机制分析">5. 事件发布机制分析</h2>
+<h3 id="51-配置选项">5.1 配置选项</h3>
+<pre><code class="language-python"># vllm/config.py:3748
+@config
+@dataclass
+class KVEventsConfig:
+    enable_kv_cache_events: bool = False
+    publisher: str = &quot;null&quot;           # &quot;null&quot;或&quot;zmq&quot;
+    endpoint: str = &quot;tcp://*:5557&quot;    # ZMQ端点
+    replay_endpoint: Optional[str] = None  # 重放端点
+    buffer_steps: int = 10_000        # 重放缓冲区大小
+    hwm: int = 100_000                # 高水位标记
+    max_queue_size: int = 100_000     # 最大队列大小
+    topic: str = &quot;&quot;                   # 发布主题
+</code></pre>
+<h3 id="52-发布器实现">5.2 发布器实现</h3>
+<p>ZeroMQ发布器的核心特性：</p>
+<ul>
+<li>使用<code>PUB/SUB</code>模式发布事件</li>
+<li>使用<code>ROUTER</code>套接字支持重放机制</li>
+<li>支持序列号确保有序传递</li>
+<li>在单独线程中异步处理发布队列</li>
+</ul>
+<h3 id="53-并发处理">5.3 并发处理</h3>
+<pre><code class="language-python"># vllm/distributed/kv_events.py:186
+def _publisher_thread(self) -&gt; None:
+    &quot;&quot;&quot;Background thread that processes the event queue.&quot;&quot;&quot;
+    self._pack = msgspec.msgpack.Encoder()
+    
+    # 持续处理队列中的事件
+    while self._running or self._event_queue.qsize() &gt; 0:
+        # 处理重放请求
+        if self._replay is not None and self._replay.poll(0):
+            try:
+                self._service_replay()
+            except Exception as e:
+                logger.exception(&quot;Error in replay: %s&quot;, e)
+                
+        # 处理主队列事件
+        try:
+            event = self._event_queue.get(timeout=0.1)
+            if event is None:  # 关闭信号
+                break
+                
+            # 使用ZeroMQ发布事件
+            seq_num = next(self._seq_gen)
+            seq_bytes = seq_num.to_bytes(8, &quot;big&quot;)
+            payload = self._pack.encode(event)
+            
+            # 存储到重放缓冲区
+            if self._replay is not None:
+                self._buffer.append((seq_num, payload))
+                
+            # 发布事件(topic, seq_num, payload)
+            self._pub.send_multipart([
+                self._topic_bytes, seq_bytes, payload
+            ])
+        except queue.Empty:
+            continue
+        except Exception as e:
+            logger.exception(&quot;Error publishing event: %s&quot;, e)
+</code></pre>
+<h2 id="6-事件订阅与消费">6. 事件订阅与消费</h2>
+<h3 id="61-基本订阅模式">6.1 基本订阅模式</h3>
+<pre><code class="language-python"># 示例订阅代码
+import zmq
+from msgspec.msgpack import Decoder
+
+def main():
+    decoder = Decoder(type=KVEventBatch)
+    context = zmq.Context()
+    
+    # 设置订阅socket
+    sub = context.socket(zmq.SUB)
+    sub.connect(&quot;tcp://vllm-service:5557&quot;)
+    sub.setsockopt_string(zmq.SUBSCRIBE, &quot;kv-events&quot;)
+    
+    while True:
+        if sub.poll(50):
+            _, seq_bytes, payload = sub.recv_multipart()
+            seq = int.from_bytes(seq_bytes, &quot;big&quot;)
+            event_batch = decoder.decode(payload)
+            process_event(event_batch)
+</code></pre>
+<h3 id="62-可靠性机制">6.2 可靠性机制</h3>
+<ol>
+<li><strong>序列号检测</strong>: 订阅者通过序列号检测是否错过消息</li>
+<li><strong>重放请求</strong>: 使用ROUTER socket请求错过的消息</li>
+<li><strong>缓冲区管理</strong>: 发布者维护固定大小的重放缓冲区</li>
+</ol>
+<h2 id="7-kubernetes部署考虑因素">7. Kubernetes部署考虑因素</h2>
+<h3 id="71-服务配置">7.1 服务配置</h3>
+<pre><code class="language-yaml">apiVersion: v1
+kind: Service
+metadata:
+  name: vllm-service
+spec:
+  selector:
+    app: vllm-service
+  ports:
+  - name: api
+    port: 8000
+  - name: zmq-pub
+    port: 5557
+  - name: zmq-replay
+    port: 5558  # 可选的重放端点
+</code></pre>
+<h3 id="72-网络策略">7.2 网络策略</h3>
+<p>需要确保允许从订阅者Pod到vLLM Pod的5557/5558端口的流量。</p>
+<h3 id="73-资源考虑">7.3 资源考虑</h3>
+<p>ZeroMQ发布线程需要额外的CPU资源，但内存占用较小。对于高吞吐量场景，应适当调整<code>hwm</code>和<code>max_queue_size</code>参数。</p>
+<h2 id="8-应用场景分析">8. 应用场景分析</h2>
+<h3 id="81-现有用例">8.1 现有用例</h3>
+<ol>
+<li><strong>调试与开发</strong>: 理解和验证KV Cache行为</li>
+<li><strong>性能分析</strong>: 监控缓存命中率和驱逐模式</li>
+<li><strong>资源利用</strong>: 追踪内存使用模式</li>
+</ol>
+<h3 id="82-潜在扩展">8.2 潜在扩展</h3>
+<ol>
+<li><strong>实时监控仪表板</strong>: 可视化KV Cache使用状态</li>
+<li><strong>分布式协调</strong>: 多实例间的缓存一致性管理</li>
+<li><strong>自适应优化</strong>: 基于使用模式动态调整缓存策略</li>
+<li><strong>细粒度计费</strong>: 基于实际缓存使用进行资源计费</li>
+</ol>
+<h2 id="9-接入设计建议">9. 接入设计建议</h2>
+<h3 id="91-事件处理流水线">9.1 事件处理流水线</h3>
+<ol>
+<li><strong>收集层</strong>: 从ZeroMQ订阅原始事件</li>
+<li><strong>处理层</strong>: 聚合、过滤和转换事件</li>
+<li><strong>存储层</strong>: 持久化事件数据(可选)</li>
+<li><strong>分析层</strong>: 提取关键指标和模式</li>
+<li><strong>展示层</strong>: 可视化和告警接口</li>
+</ol>
+<h3 id="92-推荐实现策略">9.2 推荐实现策略</h3>
+<ol>
+<li><strong>轻量级订阅者</strong>: 使用异步I/O处理高吞吐量</li>
+<li><strong>批处理机制</strong>: 批量处理事件减少网络开销</li>
+<li><strong>缓冲和重试</strong>: 处理网络故障和消息丢失</li>
+<li><strong>采样机制</strong>: 对于高流量场景考虑采样</li>
+<li><strong>水平扩展</strong>: 支持多订阅者负载均衡</li>
+</ol>
+<h3 id="93-示例接入架构">9.3 示例接入架构</h3>
+<pre><code>vLLM KV Events → 事件收集服务 → 消息队列 → 事件处理器 → 分析服务/数据库/监控系统
+</code></pre>
+<h2 id="10-总结与建议">10. 总结与建议</h2>
+<p>vLLM的KV Cache Events系统提供了监控和分析大模型缓存行为的有效机制。对于大规模部署，我们建议:</p>
+<ol>
+<li>关注事件系统的性能影响，特别是在高负载下</li>
+<li>实现可扩展的订阅者架构，支持多种消费模式</li>
+<li>建立事件数据的标准化处理流程</li>
+<li>开发专用工具辅助解释和可视化KV缓存行为</li>
+<li>考虑将事件与其他监控系统整合，形成完整的可观测性方案</li>
+</ol>
+<p>通过合理设计和实施，KV Cache Events系统可以成为优化大语言模型推理性能的重要工具。</p>
+<pre><code class="language-plaintext">BlockPool -&gt; KVCacheEvent -&gt; ZmqEventPublisher -&gt; ZeroMQ -&gt; 外部订阅者
+</code></pre>
+<pre><code class="language-python">class KVCacheEvent(msgspec.Struct):
+    &quot;&quot;&quot;所有KV缓存相关事件的基类&quot;&quot;&quot;
+    pass
+</code></pre>
+<pre><code class="language-python">class BlockStored(KVCacheEvent):
+    block_hashes: list[int]          # 块哈希列表
+    parent_block_hash: Optional[int] # 父块哈希(前缀链)
+    token_ids: list[int]             # 存储的token ID列表
+    block_size: int                  # 块大小
+    lora_id: Optional[int]           # LoRA ID(如使用)
+</code></pre>
+<pre><code class="language-python">class BlockRemoved(KVCacheEvent):
+    block_hashes: list[int]          # 被移除的块哈希列表
+</code></pre>
+<pre><code class="language-python">class AllBlocksCleared(KVCacheEvent):
+    pass
+</code></pre>
+<pre><code class="language-python">class EventBatch(msgspec.Struct):
+    ts: float                      # 时间戳
+    events: list[KVCacheEvent]     # 事件列表
+    data_parallel_rank: Optional[int] = None  # 数据并行等级
+</code></pre>
+<pre><code class="language-python"># vllm/v1/core/block_pool.py:190
+if self.enable_kv_cache_events:
+    self.kv_event_queue.append(
+        BlockStored(
+            block_hashes=new_hashes,
+            parent_block_hash=parent_block_hash,
+            token_ids=request.all_token_ids[...],
+            block_size=block_size,
+            lora_id=request.lora_request.id if request.lora_request else None,
+        ))
+</code></pre>
+<pre><code class="language-python"># vllm/v1/core/block_pool.py:257
+if self.enable_kv_cache_events:
+    self.kv_event_queue.append(
+        BlockRemoved(block_hashes=[block_hash.get_hash_value()]))
+</code></pre>
+<pre><code class="language-python"># vllm/v1/core/block_pool.py:318
+if self.enable_kv_cache_events:
+    self.kv_event_queue.append(AllBlocksCleared())
+</code></pre>
+<pre><code class="language-python"># vllm/v1/core/block_pool.py:339
+def take_events(self) -&gt; list[KVCacheEvent]:
+    &quot;&quot;&quot;Atomically takes all events and clears the queue.&quot;&quot;&quot;
+    if not self.enable_kv_cache_events:
+        return []
+    events = self.kv_event_queue
+    self.kv_event_queue = []
+    return events
+</code></pre>
+<pre><code class="language-python"># vllm/config.py:3748
+@config
+@dataclass
+class KVEventsConfig:
+    enable_kv_cache_events: bool = False
+    publisher: str = &quot;null&quot;           # &quot;null&quot;或&quot;zmq&quot;
+    endpoint: str = &quot;tcp://*:5557&quot;    # ZMQ端点
+    replay_endpoint: Optional[str] = None  # 重放端点
+    buffer_steps: int = 10_000        # 重放缓冲区大小
+    hwm: int = 100_000                # 高水位标记
+    max_queue_size: int = 100_000     # 最大队列大小
+    topic: str = &quot;&quot;                   # 发布主题
+</code></pre>
+<pre><code class="language-python"># vllm/distributed/kv_events.py:186
+def _publisher_thread(self) -&gt; None:
+    &quot;&quot;&quot;Background thread that processes the event queue.&quot;&quot;&quot;
+    self._pack = msgspec.msgpack.Encoder()
+    
+    # 持续处理队列中的事件
+    while self._running or self._event_queue.qsize() &gt; 0:
+        # 处理重放请求
+        if self._replay is not None and self._replay.poll(0):
+            try:
+                self._service_replay()
+            except Exception as e:
+                logger.exception(&quot;Error in replay: %s&quot;, e)
+                
+        # 处理主队列事件
+        try:
+            event = self._event_queue.get(timeout=0.1)
+            if event is None:  # 关闭信号
+                break
+                
+            # 使用ZeroMQ发布事件
+            seq_num = next(self._seq_gen)
+            seq_bytes = seq_num.to_bytes(8, &quot;big&quot;)
+            payload = self._pack.encode(event)
+            
+            # 存储到重放缓冲区
+            if self._replay is not None:
+                self._buffer.append((seq_num, payload))
+                
+            # 发布事件(topic, seq_num, payload)
+            self._pub.send_multipart([
+                self._topic_bytes, seq_bytes, payload
+            ])
+        except queue.Empty:
+            continue
+        except Exception as e:
+            logger.exception(&quot;Error publishing event: %s&quot;, e)
+</code></pre>
+<pre><code class="language-python"># 示例订阅代码
+import zmq
+from msgspec.msgpack import Decoder
+
+def main():
+    decoder = Decoder(type=KVEventBatch)
+    context = zmq.Context()
+    
+    # 设置订阅socket
+    sub = context.socket(zmq.SUB)
+    sub.connect(&quot;tcp://vllm-service:5557&quot;)
+    sub.setsockopt_string(zmq.SUBSCRIBE, &quot;kv-events&quot;)
+    
+    while True:
+        if sub.poll(50):
+            _, seq_bytes, payload = sub.recv_multipart()
+            seq = int.from_bytes(seq_bytes, &quot;big&quot;)
+            event_batch = decoder.decode(payload)
+            process_event(event_batch)
+</code></pre>
+<pre><code class="language-yaml">apiVersion: v1
+kind: Service
+metadata:
+  name: vllm-service
+spec:
+  selector:
+    app: vllm-service
+  ports:
+  - name: api
+    port: 8000
+  - name: zmq-pub
+    port: 5557
+  - name: zmq-replay
+    port: 5558  # 可选的重放端点
+</code></pre>
+<pre><code class="language-plaintext">vLLM KV Events → 事件收集服务 → 消息队列 → 事件处理器 → 分析服务/数据库/监控系统
+</code></pre>
+]]></content>
+    </entry>
+</feed>

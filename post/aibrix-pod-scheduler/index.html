@@ -1,0 +1,209 @@
+
+<!DOCTYPE html>
+<html>
+  <head>
+    
+<meta charset="utf-8" >
+
+<title>AiBrix Pod Scheduler | bytebingo</title>
+<meta name="description" content="温故而知新">
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.7.0/animate.min.css">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://bytebingo.github.io/favicon.ico?v=1751597140565">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+<link rel="stylesheet" href="https://bytebingo.github.io/styles/main.css">
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<script src="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.5.1/build/highlight.min.js"></script>
+
+
+
+  </head>
+  <body>
+    <div id="app" class="main">
+      <div class="site-header-container">
+  <div class="site-header">
+    <div class="left">
+      <a href="https://bytebingo.github.io">
+        <img class="avatar" src="https://bytebingo.github.io/images/avatar.png?v=1751597140565" alt="" width="32px" height="32px">
+      </a>
+      <a href="https://bytebingo.github.io">
+        <h1 class="site-title">bytebingo</h1>
+      </a>
+    </div>
+    <div class="right">
+      <transition name="fade">
+        <i class="icon" :class="{ 'icon-close-outline': menuVisible, 'icon-menu-outline': !menuVisible }" @click="menuVisible = !menuVisible"></i>
+      </transition>
+    </div>
+  </div>
+</div>
+
+<transition name="fade">
+  <div class="menu-container" style="display: none;" v-show="menuVisible">
+    <div class="menu-list">
+      
+    </div>
+  </div>
+</transition>
+
+
+      <div class="content-container">
+        <div class="post-detail">
+          
+          <h2 class="post-title">AiBrix Pod Scheduler</h2>
+          <div class="post-info post-detail-info">
+            <span><i class="icon-calendar-outline"></i> 2025-07-03</span>
+            
+          </div>
+          <div class="post-content" v-pre>
+            <h2 id="项目地址">项目地址</h2>
+<p><a href="https://github.com/vllm-project/aibrix">https://github.com/vllm-project/aibrix</a></p>
+<h2 id="项目文档">项目文档</h2>
+<p><a href="https://aibrix.readthedocs.io/latest/getting_started/quickstart.html">https://aibrix.readthedocs.io/latest/getting_started/quickstart.html</a><br>
+<br><br>
+<img src="https://aibrix.readthedocs.io/latest/_images/gateway-design.png" alt="Gateway设计图" loading="lazy"></p>
+<h1 id="支持的指标列表">支持的指标列表</h1>
+<pre><code>const (
+	NumRequestsRunning                   = &quot;num_requests_running&quot;
+	NumRequestsWaiting                   = &quot;num_requests_waiting&quot;
+	NumRequestsSwapped                   = &quot;num_requests_swapped&quot;
+	AvgPromptThroughputToksPerS          = &quot;avg_prompt_throughput_toks_per_s&quot;
+	AvgGenerationThroughputToksPerS      = &quot;avg_generation_throughput_toks_per_s&quot;
+	IterationTokensTotal                 = &quot;iteration_tokens_total&quot;
+	TimeToFirstTokenSeconds              = &quot;time_to_first_token_seconds&quot;
+	TimePerOutputTokenSeconds            = &quot;time_per_output_token_seconds&quot;
+	E2ERequestLatencySeconds             = &quot;e2e_request_latency_seconds&quot;
+	RequestQueueTimeSeconds              = &quot;request_queue_time_seconds&quot;
+	RequestInferenceTimeSeconds          = &quot;request_inference_time_seconds&quot;
+	RequestDecodeTimeSeconds             = &quot;request_decode_time_seconds&quot;
+	RequestPrefillTimeSeconds            = &quot;request_prefill_time_seconds&quot;
+	P95TTFT5m                            = &quot;p95_ttft_5m&quot;
+	P95TTFT5mPod                         = &quot;p95_ttft_5m_pod&quot;
+	AvgTTFT5mPod                         = &quot;avg_ttft_5m_pod&quot;
+	P95TPOT5mPod                         = &quot;p95_tpot_5m_pod&quot;
+	AvgTPOT5mPod                         = &quot;avg_tpot_pod_5m&quot;
+	AvgPromptToksPerReq                  = &quot;avg_prompt_toks_per_req&quot;
+	AvgGenerationToksPerReq              = &quot;avg_generation_toks_per_req&quot;
+	GPUCacheUsagePerc                    = &quot;gpu_cache_usage_perc&quot;
+	CPUCacheUsagePerc                    = &quot;cpu_cache_usage_perc&quot;
+	AvgE2ELatencyPod                     = &quot;avg_e2e_latency_pod&quot;
+	AvgRequestsPerMinPod                 = &quot;avg_requests_per_min_pod&quot;
+	AvgPromptThroughputToksPerMinPod     = &quot;avg_prompt_throughput_toks_per_min_pod&quot;
+	AvgGenerationThroughputToksPerMinPod = &quot;avg_generation_throughput_toks_per_min_pod&quot;
+	MaxLora                              = &quot;max_lora&quot;
+	WaitingLoraAdapters                  = &quot;waiting_lora_adapters&quot;
+	RunningLoraAdapters                  = &quot;running_lora_adapters&quot;
+	VTCBucketSizeActive                  = &quot;vtc_bucket_size_active&quot;
+	RealtimeNumRequestsRunning           = &quot;realtime_num_requests_running&quot;
+)
+</code></pre>
+<h1 id="支持的路由策略">支持的路由策略</h1>
+<hr>
+<h2 id="1-random">1. random</h2>
+<ul>
+<li><strong>实现原理</strong>：随机选择一个可用的Pod来处理请求</li>
+<li><strong>使用场景</strong>：适合负载均衡、简单部署场景，或作为其他策略的回退机制</li>
+<li><strong>优点</strong>：实现简单，没有状态依赖</li>
+</ul>
+<h2 id="2-least-request">2. least-request</h2>
+<ul>
+<li><strong>实现原理</strong>：选择当前处理请求数最少的Pod，基于实时监控的请求数指标</li>
+<li><strong>使用场景</strong>：适合需要均衡分配负载的场景，避免某些Pod过载</li>
+<li><strong>优点</strong>：有效平衡负载，提高整体系统吞吐量</li>
+</ul>
+<h2 id="3-prefix-cache">3. prefix-cache</h2>
+<ul>
+<li><strong>实现原理</strong>：根据请求的文本前缀将请求路由到已经缓存过相似前缀的Pod，利用缓存提高性能</li>
+<li><strong>使用场景</strong>：聊天应用、连续对话，或需要利用之前的上下文提高性能的场景</li>
+<li><strong>优点</strong>：通过缓存匹配提高推理性能，减少冷启动问题</li>
+</ul>
+<h2 id="4-prefix-cache-preble">4. prefix-cache-preble</h2>
+<ul>
+<li><strong>实现原理</strong>：结合前缀缓存和负载信息进行路由决策，平衡缓存命中率和负载均衡</li>
+<li><strong>使用场景</strong>：高并发对话系统，需要同时考虑性能和资源利用率</li>
+<li><strong>特性</strong>：使用滑动窗口来评估性能，处理负载不平衡情况</li>
+</ul>
+<h2 id="5-throughput">5. throughput</h2>
+<ul>
+<li><strong>实现原理</strong>：基于Pod的吞吐量指标进行路由，将请求发送到吞吐能力最强的Pod</li>
+<li><strong>使用场景</strong>：对性能要求高的批量处理场景</li>
+<li><strong>优点</strong>：最大化系统的整体处理能力</li>
+</ul>
+<h2 id="6-least-latency">6. least-latency</h2>
+<ul>
+<li><strong>实现原理</strong>：选择具有最低预期延迟的Pod来处理请求</li>
+<li><strong>使用场景</strong>：对响应时间敏感的应用，如实时对话系统</li>
+<li><strong>优点</strong>：最小化用户等待时间</li>
+</ul>
+<h2 id="7-least-busy-time">7. least-busy-time</h2>
+<ul>
+<li><strong>实现原理</strong>：基于Pod的忙碌时间指标选择负载较轻的Pod</li>
+<li><strong>使用场景</strong>：长时间运行的请求，需要平衡资源利用率</li>
+</ul>
+<h2 id="8-least-kv-cache">8. least-kv-cache</h2>
+<ul>
+<li><strong>实现原理</strong>：将请求路由到KV缓存使用率最低的Pod</li>
+<li><strong>使用场景</strong>：需要优化KV缓存利用率的大型模型推理</li>
+<li><strong>优点</strong>：提高缓存利用效率，减少内存压力</li>
+</ul>
+
+          </div>
+        </div>
+
+        
+          <div class="next-post">
+            <a class="purple-link" href="https://bytebingo.github.io/post/vllm-kv-cache-events/">
+              <h3 class="post-title">
+                下一篇：vLLM KV Cache Events
+              </h3>
+            </a>
+          </div>
+          
+      </div>
+
+      
+
+      <div class="site-footer">
+  <div class="slogan">温故而知新</div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+   | <a class="rss" href="https://bytebingo.github.io/atom.xml" target="_blank">RSS</a>
+</div>
+
+
+    </div>
+    <script type="application/javascript">
+
+hljs.initHighlightingOnLoad()
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+
+
+  </body>
+</html>
